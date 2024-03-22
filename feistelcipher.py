@@ -21,12 +21,12 @@ class FeistelCipher():
     def XOR(self,a,b):
         return f'{int(a,2) ^ int(b,2):04b}'
     
-    def encode(self, numSteps = 14,keys = None):
+    def encodeStep(self,message):
         newMsg = ''
         # key with size of each half (4 bits)
         key = random.sample([i for i in range(4)],4) 
-        for j in range(len(self.message)):
-            currentChar = self.message[j]
+        for j in range(len(message)):
+            currentChar = message[j]
             currentCharASCII = ord(currentChar)
             currentCharBin = self.toBinary(currentCharASCII)
             l0,r0 = self.splitInHalf(currentCharBin)
@@ -36,7 +36,16 @@ class FeistelCipher():
             newChar = chr(int(newCharBin,2))
             newMsg += newChar
         return newMsg
+    
+    def encode(self,numSteps=14):
+        msgCopy = [c for c in self.message]
+        encodedMsg = self.encodeStep(msgCopy)
+        for i in range(numSteps-1):
+            encodedMsg = self.encodeStep(encodedMsg)
+        return encodedMsg
+            
 
-msg = 'H'
+msg = 'Hello this is a Random Text'
 #Currently returning non printable characters such as '/x85'
-print(FeistelCipher(msg).encode())
+
+print(FeistelCipher(msg).encode(1))
