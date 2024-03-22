@@ -1,46 +1,42 @@
 import random
-import math
 
-def stringToASCII(s):
-    return [ord(c) for c in s]
+class FeistelCipher():
+    def __init__(self,message):
+        self.message = message
 
-def formatToBinary(c):
-    return f'{c:08b}'
+    def toBinary(self,c):
+        return f'{c:08b}'
+    
+    def splitInHalf(self,c):  
+        N = len(c)
+        return  c[0:N//2] , c[N//2:]
+    
+    def encodeBitsWithKey(self,key,bitSeq):
+        bitSeqEncoded = ''
+        originalBitSeq = [b for b in bitSeq]
+        for k in key:
+            bitSeqEncoded += originalBitSeq[k]
+        return bitSeqEncoded
+    
+    def XOR(self,a,b):
+        return f'{int(a,2) ^ int(b,2):04b}'
+    
+    def encode(self, numSteps = 14,keys = None):
+        newMsg = ''
+        # key with size of each half (4 bits)
+        key = random.sample([i for i in range(4)],4) 
+        for j in range(len(self.message)):
+            currentChar = self.message[j]
+            currentCharASCII = ord(currentChar)
+            currentCharBin = self.toBinary(currentCharASCII)
+            l0,r0 = self.splitInHalf(currentCharBin)
+            r0_encoded = self.encodeBitsWithKey(key,r0)
+            l1,r1 = r0, self.XOR(l0,r0_encoded)
+            newCharBin = f'{l1}{r1}'
+            newChar = chr(int(newCharBin,2))
+            newMsg += newChar
+        return newMsg
 
-def splitInHalf(c):
-    N = len(c)
-    return {'l' : c[0:N//2] , 'r': c[N//2:]}
-
-def generateKeys():
-    maxVal = math.pow(2,8)
-    k1 = random.randint(0,maxVal)
-    k2 = random.randint(0,maxVal)
-    return [formatToBinary(k1),formatToBinary(k2)]
-
-def XOR(a,b):
-    c = ''
-    for j in range(len(a)):
-        if a[j] == '0':
-            if b[j] == '0':
-                c += '0'
-            elif b[j] == '1':
-                c += '1'
-        elif a[j] == '1':
-            if b[j] == '0':
-                c += '1'
-            elif b[j] == '1':
-                c += '0'
-    return c
-
-s = 'Hell0'
-k1,k2 = generateKeys()
-asciiCodes = stringToASCII(s)
-print(f'Key1: {k1} Key2: {k2}')
-print(f'Original String: {s}')
-print(f'ASCII Codes: {asciiCodes}')
-for code in asciiCodes:
-    print(f'Char: {chr(code)}')
-    codeFormatted = formatToBinary(code)
-    halves = splitInHalf(codeFormatted)
-    print(f'Original Bin-Encoding: {bin(code)}  Formatted: {codeFormatted}')
-    print(f'Left Half: {halves["l"]} Right Half: {halves["r"]}')
+msg = 'H'
+#Currently returning non printable characters such as '/x85'
+print(FeistelCipher(msg).encode())
