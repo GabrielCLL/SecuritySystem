@@ -1,8 +1,9 @@
 import secrets
 
+
 class FeistelCipher:
     def __init__(self, key, rounds):
-        self.block_size = 32
+        self.block_size = 8 #64bits 
         self.key_size = len(key)
         self.rounds = rounds
         self.key = key
@@ -30,10 +31,16 @@ class FeistelCipher:
         blocks = [msg[i: i + self.block_size] for i in range(0, len(msg), self.block_size)]
 
         # check if the last block is the correct size, otherwise fill it with blank
-        last_block = blocks[len(blocks)-1]
-        if (len(last_block) < self.block_size):
-            for i in range(len(last_block), self.block_size):
-                last_block += " "
+        last_block = blocks[-1]
+        last_block_size = len(last_block)
+
+        if (last_block_size < self.block_size):
+            last_block += " " * (self.block_size - last_block_size)
+            # if you want to fill with random things
+            # random_chars = ''.join(random.choices(string.ascii_letters + string.digits, k=self.block_size - last_block_size))
+            # last_block += random_chars
+
+        blocks[-1] = last_block
 
         return blocks
 
@@ -41,25 +48,24 @@ class FeistelCipher:
         """
         A method for encrypting the message using the Feistel cipher.
         """
-         
         blocks = self.set_message_blocks(msg)
 
         ciphertext = ''
 
         for block in blocks:
-                # create the vectors
-                L = [""]*(self.rounds +1)
-                R = [""]*(self.rounds +1)
+            # create the vectors
+            L = [""]*(self.rounds +1)
+            R = [""]*(self.rounds +1)
 
-                # initialiazer the first ones
-                L[0], R[0] = self.split_in_half(block)
+            # initialiazer the first ones
+            L[0], R[0] = self.split_in_half(block)
 
-                # rounds to encode
-                for index in range(1, self.rounds + 1):
-                    L[index] = R[index-1]
-                    R[index] = self.xor(L[index - 1], self.feistel_function(R[index - 1], self.subkeys[index - 1]))
-        
-        ciphertext += (L[self.rounds] + R[self.rounds])
+            # rounds to encode
+            for index in range(1, self.rounds + 1):
+                L[index] = R[index-1]
+                R[index] = self.xor(L[index - 1], self.feistel_function(R[index - 1], self.subkeys[index - 1]))
+
+            ciphertext += (L[self.rounds] + R[self.rounds])
 
         return ciphertext
 
@@ -73,19 +79,20 @@ class FeistelCipher:
         msg = ''
 
         for block in blocks:
-                 # create the vectors
-                L = [""]*(self.rounds +1)
-                R = [""]*(self.rounds +1)
+            # create the vectors
+            L = [""]*(self.rounds +1)
+            R = [""]*(self.rounds +1)
 
-                # initialiazer the lastones
-                L[self.rounds], R[self.rounds] = self.split_in_half(block)
+            # initialiazer the lastones
+            L[self.rounds], R[self.rounds] = self.split_in_half(block)
 
-                # rounds to decode
-                for index in range(self.rounds, 0, -1):
-                    R[index-1] = L[index]
-                    L[index-1] = self.xor(R[index], self.feistel_function(L[index], self.subkeys[index-1]))
+            # rounds to decode
+            for index in range(self.rounds, 0, -1):
+                    
+                R[index-1] = L[index]
+                L[index-1] = self.xor(R[index], self.feistel_function(L[index], self.subkeys[index-1]))
         
-        msg += (L[0] + R[0])
+            msg += (L[0] + R[0])
 
         return msg
 
@@ -96,6 +103,7 @@ class FeistelCipher:
         """
         bit_seq = ''.join(format(ord(c), '08b') for c in text_block)
         bit_seq_encoded = ''.join(bit_seq[int(k)] for k in key)
+        
         return bit_seq_encoded
     
     def xor(self, text1, text2):
@@ -110,7 +118,7 @@ def generate_secure_key(bits):
     return ''.join(str(secrets.randbits(1)) for _ in range(bits))
 
 plaintext = 'Hello this is a Random Text'
-rounds = 14
+rounds = 4
 
 key = generate_secure_key(64)
 
