@@ -1,51 +1,118 @@
-import random
+import secrets
 
-class FeistelCipher():
-    def __init__(self,message):
-        self.message = message
 
-    def toBinary(self,c):
-        return f'{c:08b}'
+class FeistelCipher:
+    def __init__(self, key, rounds=14):
+        self.block_size = 8 #64bits 
+        self.key_size = len(key)
+        self.rounds = rounds
+        self.key = key
+        self.subkeys = self.generate_sub_keys()
     
-    def splitInHalf(self,c):  
-        N = len(c)
-        return  c[0:N//2] , c[N//2:]
-    
-    def encodeBitsWithKey(self,key,bitSeq):
-        bitSeqEncoded = ''
-        originalBitSeq = [b for b in bitSeq]
-        for k in key:
-            bitSeqEncoded += originalBitSeq[k]
-        return bitSeqEncoded
-    
-    def XOR(self,a,b):
-        return f'{int(a,2) ^ int(b,2):04b}'
-    
-    def encodeStep(self,message):
-        newMsg = ''
-        # key with size of each half (4 bits)
-        key = random.sample([i for i in range(4)],4) 
-        for j in range(len(message)):
-            currentChar = message[j]
-            currentCharASCII = ord(currentChar)
-            currentCharBin = self.toBinary(currentCharASCII)
-            l0,r0 = self.splitInHalf(currentCharBin)
-            r0_encoded = self.encodeBitsWithKey(key,r0)
-            l1,r1 = r0, self.XOR(l0,r0_encoded)
-            newCharBin = f'{l1}{r1}'
-            newChar = chr(int(newCharBin,2))
-            newMsg += newChar
-        return newMsg
-    
-    def encode(self,numSteps=14):
-        msgCopy = [c for c in self.message]
-        encodedMsg = self.encodeStep(msgCopy)
-        for i in range(numSteps-1):
-            encodedMsg = self.encodeStep(encodedMsg)
-        return encodedMsg
-            
+    def generate_sub_keys(self):
+        """
+        A method for generating subkeys, one per round, using a cyclic rotation technique.
+        The number of subkeys its the same of rounds.
+        """
+        return [self.key[i % self.key_size:] + self.key[:i % self.key_size] for i in range(self.rounds)]
 
-msg = 'Hello this is a Random Text'
-#Currently returning non printable characters such as '/x85'
+    def split_in_half(self, text):
+        """
+        A method for splitting a text in the middle.
+        """
+        return text[:self.block_size // 2], text[self.block_size // 2:]
+    
+    def get_message_blocks(self, msg):
+        """
+        A method for configuring the message. 
+        If the size of the message is bigger than the block size, split the message into blocks with the permitted block size.
+        """
+        # divide the message in blocks with the block_size
+        blocks = [msg[i: i + self.block_size] for i in range(0, len(msg), self.block_size)]
 
-print(FeistelCipher(msg).encode(1))
+        # check if the last block is the correct size, otherwise fill it with blank
+        last_block = blocks[-1]
+        last_block_size = len(last_block)
+
+        if (last_block_size < self.block_size):
+            last_block += " " * (self.block_size - last_block_size)
+            # if you want to fill with random things
+            # random_chars = ''.join(random.choices(string.ascii_letters + string.digits, k=self.block_size - last_block_size))
+            # last_block += random_chars
+
+        blocks[-1] = last_block
+
+        return blocks
+
+    def encrypt(self, msg):
+        """
+        A method for encrypting the message using the Feistel cipher.
+        """
+        blocks = self.get_message_blocks(msg)
+
+        ciphertext = ''
+
+        for block in blocks:
+            # create the vectors
+            L = [""]*(self.rounds +1)
+            R = [""]*(self.rounds +1)
+
+            # initialize the first ones
+            L[0], R[0] = self.split_in_half(block)
+
+            # rounds to encode
+            for index in range(1, self.rounds + 1):
+                L[index] = R[index-1]
+                R[index] = self.xor(L[index - 1], self.feistel_function(R[index - 1], self.subkeys[index - 1]))
+
+            ciphertext += (L[self.rounds] + R[self.rounds])
+
+        return ciphertext
+
+    def decrypt(self, ciphertext):
+        """
+        A method for decrypting the message using the Feistel cipher.
+        """
+                
+        blocks = self.get_message_blocks(ciphertext)
+
+        msg = ''
+
+        for block in blocks:
+            # create the vectors
+            L = [""]*(self.rounds +1)
+            R = [""]*(self.rounds +1)
+
+            # initialiazer the lastones
+            L[self.rounds], R[self.rounds] = self.split_in_half(block)
+
+            # rounds to decode
+            for index in range(self.rounds, 0, -1):
+                    
+                R[index-1] = L[index]
+                L[index-1] = self.xor(R[index], self.feistel_function(L[index], self.subkeys[index-1]))
+        
+            msg += (L[0] + R[0])
+
+        return msg
+
+    def feistel_function(self, text_block, key):
+        """
+        A method describing the technique used, similar to the f() function in the Feistel cipher.
+        The technique involves permuting the positions of the text content based on the provided key.
+        """
+        bit_seq = ''.join(format(ord(c), '08b') for c in text_block)
+        bit_seq_encoded = ''.join(bit_seq[int(k)] for k in key)
+        
+        return self.xor(bit_seq_encoded, text_block)
+    
+    def xor(self, text1, text2):
+        """
+        A simple XOR.
+        """
+        return ''.join(chr(ord(a) ^ ord(b)) for a, b in zip(text1, text2))
+
+
+# Example
+def generate_secure_key(bits):
+    return ''.join(str(secrets.randbits(1)) for _ in range(bits))
