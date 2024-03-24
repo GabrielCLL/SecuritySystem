@@ -116,3 +116,16 @@ class FeistelCipher:
 # Example
 def generate_secure_key(bits):
     return ''.join(str(secrets.randbits(1)) for _ in range(bits))
+
+# plaintext = 'Hello this is a Random Text'
+# rounds = 4
+
+# key = generate_secure_key(64)
+
+# feistel = FeistelCipher(key, rounds)
+
+# encrypt_text = feistel.encrypt(plaintext)
+# print(f"Encrypted text: {encrypt_text}")
+
+# decrypt_text = feistel.decrypt(encrypt_text)
+# print(f"Decrypted text: {decrypt_text}")
