@@ -103,8 +103,8 @@ class FeistelCipher:
         """
         bit_seq = ''.join(format(ord(c), '08b') for c in text_block)
         bit_seq_encoded = ''.join(bit_seq[int(k)] for k in key)
-        
-        return bit_seq_encoded
+
+        return self.xor(bit_seq_encoded, text_block)
     
     def xor(self, text1, text2):
         """
