@@ -18,8 +18,9 @@ while 1:
        #Cria um socket para tratar a conexao do cliente
      connectionSocket, addr = serverSocket.accept()
      sentence = connectionSocket.recv(1024)
-     decoded_sentence = sentence.decode('UTF-8')
-     decripted_sentence = cipher.decrypt(decoded_sentence)
-     capitalizedSentence = decripted_sentence.upper()
-     connectionSocket.send(capitalizedSentence.encode('UTF-8'))
+     decodedSentence = sentence.decode('UTF-8')
+     decriptedSentence = cipher.decrypt(decodedSentence)
+     capitalizedSentence = decriptedSentence.upper()
+     capitalizedSentenceEncripted = cipher.encrypt(capitalizedSentence)
+     connectionSocket.send(capitalizedSentenceEncripted.encode('UTF-8'))
      connectionSocket.close()

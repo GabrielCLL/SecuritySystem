@@ -14,12 +14,14 @@ message = input('Digite uma frase: ')
 #Chave gerada usando função generate_secure_key em feistelcipher
 key = '1000100000100011110101001111100010010001011010101100001110100010'
 cipher = FeistelCipher(key)
-encripted_message = cipher.encrypt(message)
+encriptedMessage = cipher.encrypt(message)
 
-clientSocket.send(encripted_message.encode('UTF-8'))
+clientSocket.send(encriptedMessage.encode('UTF-8'))
 
 #Aguarda mensagem de retorno e a imprime
 modifiedMessage, addr = clientSocket.recvfrom(2048)
-print("Retorno do Servidor:",modifiedMessage.decode())
+modifiedMessageDecripted = cipher.decrypt(modifiedMessage.decode())
+
+print("Retorno do Servidor:",modifiedMessageDecripted)
 
 clientSocket.close()
